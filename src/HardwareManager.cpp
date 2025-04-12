@@ -12,7 +12,8 @@
 // Eliminamos la declaración externa del mapa global
 
 // time execution < 10 ms
-bool HardwareManager::initHardware(SPIClass& spiLora, 
+bool HardwareManager::initHardware(SPIClass& spiLora,
+                                 SPIClass& spiShared, // Añadir spiShared como parámetro
                                  const std::vector<SensorConfig>& enabledNormalSensors) {
     // Configurar GPIO one wire con pull-up
     pinMode(ONE_WIRE_BUS, INPUT_PULLUP);
@@ -48,7 +49,10 @@ bool HardwareManager::initHardware(SPIClass& spiLora,
     }
     
     // Inicializar SPI para LORA con pines definidos
-    spiLora.begin(SPI_LORA_SCK_PIN, SPI_LORA_MISO_PIN, SPI_LORA_MOSI_PIN);
+    spiLora.begin(SPI_LORA_SCK_PIN, SPI_LORA_MISO_PIN, SPI_LORA_MOSI_PIN); // FSPI para LoRa
+    
+    // Inicializar SPI compartido (HSPI) para ADC y RTD
+    spiShared.begin(SPI_SCK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
     
     // Inicializar los pines de selección SPI (SS)
     initializeSPISSPins();

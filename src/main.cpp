@@ -99,12 +99,12 @@ Adafruit_VEML7700 veml7700;
 SCD4x scd4x(SCD4x_SENSOR_SCD41);
 
 // Sensores analógicos
-Adafruit_MAX31865 rtdSensor = Adafruit_MAX31865(PT100_CS_PIN, SPI_MOSI_PIN, SPI_MISO_PIN, SPI_SCK_PIN);
+SPIClass spiShared(HSPI); // Instancia SPI compartida (HSPI) para ADC y RTD
+Adafruit_MAX31865 rtdSensor = Adafruit_MAX31865(PT100_CS_PIN, &spiShared); // Usar instancia SPI compartida
 
 // Sensores ADS124S08
-SPIClass spiAdc(HSPI); // Usar HSPI para el ADC
-SPISettings spiAdcSettings(5000000, MSBFIRST, SPI_MODE1); // 5MHz, MSBFIRST, MODE1 para ADS124S08
-ADS124S08 ADC(spiAdc, spiAdcSettings);
+SPISettings spiAdcSettings(5000000, MSBFIRST, SPI_MODE1); // Settings para ADS124S08 (y compatibles con MAX31865)
+ADS124S08 ADC(spiShared, spiAdcSettings); // ADC usa la instancia compartida
 
 // Variables para almacenar lecturas de sensores
 std::vector<SensorReading> normalReadings;
@@ -140,7 +140,7 @@ bool initHardware() {
     enabledAdcSensors = ConfigManager::getEnabledAdcSensorConfigs();
 
     // Inicialización de hardware básico (GPIO, I2C, SPI, etc.)
-    if (!HardwareManager::initHardware(spiLora, enabledNormalSensors)) {
+    if (!HardwareManager::initHardware(spiLora, spiShared, enabledNormalSensors)) { // Pasar spiShared
         return false;
     }
 

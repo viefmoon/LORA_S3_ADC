@@ -30,7 +30,8 @@ public:
      * @param enabledNormalSensors Vector de sensores habilitados en la configuración
      * @return true si la inicialización fue exitosa, false en caso contrario
      */
-    static bool initHardware(SPIClass& spiLora, 
+    static bool initHardware(SPIClass& spiLora,
+                           SPIClass& spiShared, // Añadir spiShared como parámetro
                            const std::vector<SensorConfig>& enabledNormalSensors);
 
     /**

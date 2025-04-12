@@ -35,6 +35,7 @@ extern Adafruit_BME680 bme680Sensor;
 extern Adafruit_BME280 bme280Sensor;
 extern Adafruit_VEML7700 veml7700;
 extern ADS124S08 ADC;
+extern Adafruit_MAX31865 rtdSensor; // Añadir declaración externa para rtdSensor
 
 // Inicialización del mapa estático
 std::map<std::string, bool> SensorManager::sensorInitStatus;
