@@ -407,14 +407,13 @@
 #define SPI_HAS_TRANSACTION 0
 
 #if defined (SPI_HAS_TRANSACTION)
-  static SPISettings mySPISettings;
 #endif
 
 class ADS124S08
 {
 	// Device command prototypes
 	public:
-		ADS124S08(void);
+		ADS124S08(SPIClass& spi, SPISettings& spiSettings);
 		void begin();
 		char regRead(unsigned int regnum);
 		void readRegs(unsigned int regnum, unsigned int count, uint8_t *data);
@@ -433,11 +432,13 @@ class ADS124S08
 		bool converting;
 		uint8_t registers[NUM_REGISTERS];
   private:
-		bool fStart;
-		void DRDY_int(void);
-		uint8_t _drdy_pin;
-		uint8_t _start_pin;
-		uint8_t _reset_pin;
+  SPIClass& _spi;
+  SPISettings& _spiSettings;
+  bool fStart;
+  void DRDY_int(void);
+  uint8_t _drdy_pin;
+  uint8_t _start_pin;
+  uint8_t _reset_pin;
 };
 
 

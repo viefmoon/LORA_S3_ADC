@@ -65,6 +65,8 @@ bool Adafruit_MAX31865::begin(max31865_numwires_t wires) {
   setThresholds(0, 0xFFFF);
   clearFault();
 
+  // Serial.print("config: ");
+  // Serial.println(readRegister8(MAX31865_CONFIG_REG), HEX);
   return true;
 }
 

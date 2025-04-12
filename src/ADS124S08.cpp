@@ -63,7 +63,7 @@ void ADS124S08::releaseChipSelect(void){
  * \return True if device is in correct hardware defaults and is connected
  *
  */
-ADS124S08::ADS124S08(void)
+ADS124S08::ADS124S08(SPIClass& spi, SPISettings& spiSettings) : _spi(spi), _spiSettings(spiSettings)
 {
 	pinMode( ADS124S08_CS_PIN, OUTPUT );
 	pinMode( ADS124S08_START_PIN, OUTPUT );
@@ -101,13 +101,7 @@ ADS124S08::ADS124S08(void)
 
 void ADS124S08::begin()
 {
-	SPI.begin( ADS124S08_CS_PIN );
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setDataMode( SPI_MODE1 );
-	SPI.setClockDivider( SPI_CLOCK_DIV16 );
-	#if defined (SPI_HAS_TRANSACTION)
-		mySPISettings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
-	#endif
+	// SPI initialization is now handled outside this class
 }
 
 /*
@@ -127,16 +121,16 @@ char ADS124S08::regRead(unsigned int regnum)
 	selectDeviceCSLow();
 
 	#if defined (SPI_HAS_TRANSACTION)
-		SPI.beginTransaction(mySPISettings);
+		_spi.beginTransaction(_spiSettings);
 	#endif
 
 	for(i = 0; i < 3; i++)
-		ulDataRx[i] = SPI.transfer(ulDataTx[i]);
+		ulDataRx[i] = _spi.transfer(ulDataTx[i]);
 	if(regnum < NUM_REGISTERS)
 			registers[regnum] = ulDataRx[2];
 
 	#if defined (SPI_HAS_TRANSACTION)
-		SPI.endTransaction();
+		_spi.endTransaction();
 	#endif
 
 	releaseChipSelect();
@@ -160,14 +154,16 @@ void ADS124S08::readRegs(unsigned int regnum, unsigned int count, uint8_t *data)
 	ulDataTx[0] = REGRD_OPCODE_MASK + (regnum & 0x1f);
 	ulDataTx[1] = count-1;
 	selectDeviceCSLow();
-	SPI.transfer(ulDataTx[0]);
-	SPI.transfer(ulDataTx[1]);
+	_spi.beginTransaction(_spiSettings); // Assuming transaction needed for multi-byte transfer
+	_spi.transfer(ulDataTx[0]);
+	_spi.transfer(ulDataTx[1]);
 	for(i = 0; i < count; i++)
 	{
-		data[i] = SPI.transfer(0);
+		data[i] = _spi.transfer(0);
 		if(regnum+i < NUM_REGISTERS)
 			registers[regnum+i] = data[i];
 	}
+	_spi.endTransaction(); // End transaction
 	releaseChipSelect();
 }
 
@@ -185,9 +181,11 @@ void ADS124S08::regWrite(unsigned int regnum, unsigned char data)
 	ulDataTx[1] = 0x00;
 	ulDataTx[2] = data;
 	selectDeviceCSLow();
-	SPI.transfer(ulDataTx[0]);
-	SPI.transfer(ulDataTx[1]);
-	SPI.transfer(ulDataTx[2]);
+	_spi.beginTransaction(_spiSettings); // Assuming transaction needed
+	_spi.transfer(ulDataTx[0]);
+	_spi.transfer(ulDataTx[1]);
+	_spi.transfer(ulDataTx[2]);
+	_spi.endTransaction(); // End transaction
 	releaseChipSelect();
 	//Serial.printlnf("regWrite tx: %02x %02x %02x",ulDataTx[0],ulDataTx[1],ulDataTx[2]);
 	return;
@@ -208,14 +206,16 @@ void ADS124S08::writeRegs(unsigned int regnum, unsigned int howmuch, unsigned ch
 	ulDataTx[0] = REGWR_OPCODE_MASK + (regnum & 0x1f);
 	ulDataTx[1] = howmuch-1;
 	selectDeviceCSLow();
-	SPI.transfer(ulDataTx[0]);
-	SPI.transfer(ulDataTx[1]);
+	_spi.beginTransaction(_spiSettings); // Assuming transaction needed
+	_spi.transfer(ulDataTx[0]);
+	_spi.transfer(ulDataTx[1]);
 	for(i=0; i < howmuch; i++)
 	{
-		SPI.transfer( data[i] );
+		_spi.transfer( data[i] );
 		if(regnum+i < NUM_REGISTERS)
 			registers[regnum+i] = data[i];
 	}
+	_spi.endTransaction(); // End transaction
 	releaseChipSelect();
 	return;
 }
@@ -229,7 +229,9 @@ void ADS124S08::writeRegs(unsigned int regnum, unsigned int howmuch, unsigned ch
 void ADS124S08::sendCommand(uint8_t op_code)
 {
 	selectDeviceCSLow();
-	SPI.transfer(op_code);
+	_spi.beginTransaction(_spiSettings); // Assuming transaction needed
+	_spi.transfer(op_code);
+	_spi.endTransaction(); // End transaction
 	releaseChipSelect();
 	return;
 }
@@ -288,23 +290,25 @@ int ADS124S08::rData(uint8_t *dStatus, uint8_t *dData, uint8_t *dCRC)
 	int result = -1;
 	selectDeviceCSLow();
 
+	_spi.beginTransaction(_spiSettings); // Start transaction for RDATA sequence
 	// according to datasheet chapter 9.5.4.2 Read Data by RDATA Command
-	sendCommand(RDATA_OPCODE_MASK);
+	// sendCommand(RDATA_OPCODE_MASK); // sendCommand already handles transactions, call directly
+	   _spi.transfer(RDATA_OPCODE_MASK); // Send RDATA command within the transaction
 
 	// if the Status byte is set - grab it
 	uint8_t shouldWeReceiveTheStatusByte = (registers[SYS_ADDR_MASK] & 0x01) == DATA_MODE_STATUS;
 	if( shouldWeReceiveTheStatusByte )
 	{
-		dStatus[0] = SPI.transfer(0x00);
+		dStatus[0] = _spi.transfer(0x00);
 		//Serial.print("status: ");
 		//Serial.print(dStatus[0]);
 	}
 
 	// get the conversion data (3 bytes)
 	uint8_t data[3];
-	data[0] = SPI.transfer(0x00);
-	data[1] = SPI.transfer(0x00);
-	data[2] = SPI.transfer(0x00);
+	data[0] = _spi.transfer(0x00);
+	data[1] = _spi.transfer(0x00);
+	data[2] = _spi.transfer(0x00);
 	result = data[0];
 	result = (result<<8) + data[1];
 	result = (result<<8) + data[2];
@@ -314,9 +318,10 @@ int ADS124S08::rData(uint8_t *dStatus, uint8_t *dData, uint8_t *dCRC)
 	uint8_t isCrcEnabled = (registers[SYS_ADDR_MASK] & 0x02) == DATA_MODE_CRC;
 	if( isCrcEnabled )
 	{
-		dCRC[0] = SPI.transfer(0x00);
+		dCRC[0] = _spi.transfer(0x00);
 	}
 
+	_spi.endTransaction(); // End transaction for RDATA sequence
 	releaseChipSelect();
 	return result;
 }
@@ -332,9 +337,10 @@ int ADS124S08::dataRead(uint8_t *dStatus, uint8_t *dData, uint8_t *dCRC)
 	uint8_t xstatus;
 	int iData;
 	selectDeviceCSLow();
+	_spi.beginTransaction(_spiSettings); // Start transaction for direct read
 	if((registers[SYS_ADDR_MASK] & 0x01) == DATA_MODE_STATUS)
 	{
-		xstatus = SPI.transfer(0x00);
+		xstatus = _spi.transfer(0x00);
 		//Serial.print("0:");
 		//Serial.print(xstatus);
 		dStatus[0] = (uint8_t)xstatus;
@@ -342,9 +348,9 @@ int ADS124S08::dataRead(uint8_t *dStatus, uint8_t *dData, uint8_t *dCRC)
 
 	// get the conversion data (3 bytes)
 	uint8_t data[3];
-	data[0] = SPI.transfer(0x00);
-	data[1] = SPI.transfer(0x00);
-	data[2] = SPI.transfer(0x00);
+	data[0] = _spi.transfer(0x00);
+	data[1] = _spi.transfer(0x00);
+	data[2] = _spi.transfer(0x00);
 
 	/*
 	Serial.print(" 1:");
@@ -360,9 +366,10 @@ int ADS124S08::dataRead(uint8_t *dStatus, uint8_t *dData, uint8_t *dCRC)
 	iData = (iData<<8) + data[2];
 	if((registers[SYS_ADDR_MASK] & 0x02) == DATA_MODE_CRC)
 	{
-		xcrc = SPI.transfer(0x00);
+		xcrc = _spi.transfer(0x00);
 		dCRC[0] = (uint8_t)xcrc;
 	}
+	_spi.endTransaction(); // End transaction for direct read
 	releaseChipSelect();
 	return iData ;
 }

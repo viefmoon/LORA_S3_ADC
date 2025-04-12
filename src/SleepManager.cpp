@@ -109,7 +109,8 @@ void SleepManager::configurePinsForDeepSleep() {
 
     // Alimentacion
     pinMode(POWER_3V3_PIN, ANALOG); //alta impedancia
-    pinMode(POWER_12V_PIN, ANALOG); //alta impedancia
+    pinMode(POWER_12V1_PIN, ANALOG); //alta impedancia
+    pinMode(POWER_12V2_PIN, ANALOG); //alta impedancia
 
     // FlowSensor
     pinMode(FLOW_SENSOR_PIN, ANALOG); //alta impedancia

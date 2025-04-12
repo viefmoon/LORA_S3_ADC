@@ -34,6 +34,7 @@
 extern Adafruit_BME680 bme680Sensor;
 extern Adafruit_BME280 bme280Sensor;
 extern Adafruit_VEML7700 veml7700;
+extern ADS124S08 ADC;
 
 // Inicialización del mapa estático
 std::map<std::string, bool> SensorManager::sensorInitStatus;
@@ -155,22 +156,25 @@ void SensorManager::beginSensors(const std::vector<SensorConfig>& enabledNormalS
     }
 
     // Configurar los pines analógicos para cada sensor
-    // NTC100K 0 - Pin A0
-    pinMode(NTC100K_0_PIN, INPUT);
-    // NTC100K 1 - Pin A3
-    pinMode(NTC100K_1_PIN, INPUT);
-    // NTC10K - Pin A4
-    pinMode(NTC10K_PIN, INPUT);
-    // PH Sensor - Pin A5
-    pinMode(PH_SENSOR_PIN, INPUT);
-    // Conductivity Sensor - Pin A6
-    pinMode(COND_SENSOR_PIN, INPUT);
-    // HDS10 Sensor - Pin A7
-    pinMode(HDS10_SENSOR_PIN, INPUT);
-    // Battery Sensor - Pin A8
     pinMode(BATTERY_SENSOR_PIN, INPUT);
-    // Soil Humidity Sensor
-    pinMode(SOILH_SENSOR_PIN, INPUT);
+
+    //INICIALIZAR ADC
+    ADC.begin();
+    // Reset del ADC
+    ADC.sendCommand(RESET_OPCODE_MASK);
+    delay(1);
+    // Asegurarse de que el ADC esté despierto
+    ADC.sendCommand(WAKE_OPCODE_MASK);
+
+    // Configurar ADC con referencia interna
+    ADC.regWrite(REF_ADDR_MASK, ADS_REFINT_ON_ALWAYS | ADS_REFSEL_INT);
+    
+    // Deshabilitar PGA (bypass)
+    ADC.regWrite(PGA_ADDR_MASK, ADS_PGA_BYPASS); // PGA_EN = 0, ganancia ignorada
+    
+    // Ajustar velocidad de muestreo y modo single shot
+    ADC.regWrite(DATARATE_ADDR_MASK, ADS_DR_4000 | ADS_CONVMODE_SS); // Modo single shot
+
 
     // Inicializar sensores ADC habilitados
     for (const auto& sensor : enabledAdcSensors) {
@@ -558,7 +562,7 @@ void SensorManager::getAllSensorReadings(std::vector<SensorReading>& normalReadi
         }
         
         // Encender alimentación de 12V para sensores Modbus
-        PowerManager::power12VOn();
+        PowerManager::power12V1On();
         delay(maxStabilizationTime);
         
         // Inicializar comunicación Modbus antes de comenzar las mediciones
@@ -573,6 +577,6 @@ void SensorManager::getAllSensorReadings(std::vector<SensorReading>& normalReadi
         ModbusSensorManager::endModbus();
         
         // Apagar alimentación de 12V después de completar las lecturas
-        PowerManager::power12VOff();
+        PowerManager::power12V1Off();
     }
 }
