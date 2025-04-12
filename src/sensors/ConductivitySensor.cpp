@@ -4,6 +4,8 @@
 #include "sensors/NtcManager.h"
 #include "config/pins_config.h"
 #include "config_manager.h"
+#include "AdcUtilities.h"
+#include "ADS124S08.h"
 
 /**
  * @brief Convierte el voltaje medido a valor de conductividad/TDS en ppm
@@ -46,20 +48,20 @@ float ConductivitySensor::convertVoltageToConductivity(float voltage, float temp
 }
 
 /**
- * @brief Lee el sensor de conductividad conectado al pin analógico
+ * @brief Lee el sensor de conductividad usando el ADC externo ADS124S08
  * 
  * @return float Valor de conductividad/TDS en ppm, o NAN si hay error
  */
 float ConductivitySensor::read() {
-    // Leer el valor del pin analógico
-    int adcValue = analogRead(COND_SENSOR_PIN);
+    // Configurar para medir diferencial entre AIN9 y AINCOM
+    uint8_t muxConfig = ADS_P_AIN9 | ADS_N_AINCOM;
     
-    // Convertir el valor ADC a voltaje (0-3.3V con resolución de 12 bits)
-    float voltage = adcValue * (3.3f / 4095.0f);
+    // Realizar la medición diferencial utilizando el ADC externo
+    float voltage = AdcUtilities::measureAdcDifferential(muxConfig);
     
-    // Verificar si el voltaje es válido
-    if (isnan(voltage) || voltage <= 0.0f || voltage >= 3.3f) {
-        return NAN;
+    // Verificar si el voltaje está en rango válido (0-2.5V para el ADS124S08)
+    if (isnan(voltage) || voltage < 0.0f || voltage > 2.5f) {
+        return NAN; // Valor fuera de rango
     }
     
     // Obtener temperatura únicamente del sensor NTC10K

@@ -37,9 +37,9 @@ public:
     static double steinhartHartTemperature(double resistance, double A, double B, double C);
 
     /**
-     * @brief Calcula la resistencia del NTC en el puente de Wheatstone según la disposición descrita
-     * @param diffVoltage Voltaje diferencial = (Vneg - 1.25)
-     * @return Resistencia medida del NTC (ohms)
+     * @brief Calcula la resistencia del NTC en un puente de Wheatstone a partir del voltaje diferencial
+     * @param diffVoltage Voltaje diferencial medido (V)
+     * @return Resistencia medida del NTC (ohms) o -1 si hay error
      */
     static double computeNtcResistanceFromBridge(double diffVoltage);
 
@@ -54,14 +54,22 @@ public:
     static double computeNtcResistanceFromVoltageDivider(double voltage, double vRef, double rFixed, bool ntcTop = true);
 
     /**
-     * @brief Obtiene la temperatura de un sensor NTC100K
-     * @param configKey "0" o "1"
+     * @brief Obtiene la temperatura de un sensor NTC100K usando ADS124S08
+     * 
+     * Mide diferencialmente desde el ADS124S08:
+     * - Para NTC100K_0: AIN1 (+) y AIN0 (-)
+     * - Para NTC100K_1: AIN3 (+) y AIN2 (-)
+     * 
+     * @param configKey "0" o "1" para seleccionar el sensor
      * @return Temperatura en °C o NAN en caso de error
      */
     static double readNtc100kTemperature(const char* configKey);
 
     /**
-     * @brief Obtiene la temperatura de un sensor NTC10K
+     * @brief Obtiene la temperatura de un sensor NTC10K usando ADS124S08
+     * 
+     * Mide diferencialmente entre AIN4 (+) y AINCOM (-)
+     * 
      * @return Temperatura en °C o NAN en caso de error
      */
     static double readNtc10kTemperature();

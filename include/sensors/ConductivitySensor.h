@@ -12,7 +12,10 @@
 class ConductivitySensor {
 public:
     /**
-     * @brief Lee el sensor de conductividad conectado al canal AIN6 del ADC
+     * @brief Lee el sensor de conductividad utilizando el ADS124S08
+     * 
+     * Realiza una medición diferencial entre AIN9 y AINCOM utilizando
+     * el ADC externo ADS124S08.
      * 
      * @return float Valor de conductividad/TDS en ppm, o NAN si hay error
      */

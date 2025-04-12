@@ -11,7 +11,10 @@
 class HDS10Sensor {
 public:
     /**
-     * @brief Lee el sensor HDS10 conectado al canal AIN5/AIN8 del ADC
+     * @brief Lee el sensor HDS10 utilizando el ADS124S08
+     * 
+     * Realiza una medición diferencial entre AIN6 y AINCOM utilizando
+     * el ADC externo ADS124S08.
      * 
      * @return float Porcentaje de humedad (0-100%) según calibración definida
      *               o NAN si ocurre un error o no es posible leer

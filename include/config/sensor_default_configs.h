@@ -10,7 +10,7 @@
     {"B2", "BM2_1", BME280, true}, \
     {"L", "LUX1", VEML7700, false}, \
     {"SH4", "SH4_1", SHT40, true}, \
-    {"R", "RTD_1",  RTD, true}, \
+    {"R", "RTD_1",  RTD, false}, \
     {"D", "DS_1",   DS18B20, false}, \
     {"SH3", "SH3_1", SHT30, false} \
 }

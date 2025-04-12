@@ -89,14 +89,7 @@ void SleepManager::configurePinsForDeepSleep() {
     pinMode(SPI_MOSI_PIN, ANALOG); //alta impedancia
 
     // Configurar pines de sensores analógicos como ANALOG
-    pinMode(NTC100K_0_PIN, ANALOG); //alta impedancia
-    pinMode(NTC100K_1_PIN, ANALOG); //alta impedancia
-    pinMode(NTC10K_PIN, ANALOG); //alta impedancia
-    pinMode(PH_SENSOR_PIN, ANALOG); //alta impedancia
-    pinMode(COND_SENSOR_PIN, ANALOG); //alta impedancia
-    pinMode(HDS10_SENSOR_PIN, ANALOG); //alta impedancia
     pinMode(BATTERY_SENSOR_PIN, ANALOG); //alta impedancia
-    pinMode(SOILH_SENSOR_PIN, ANALOG); //alta impedancia
 
     // Configurar pin de LED de configuración como alta impedancia
     pinMode(CONFIG_LED_PIN, ANALOG); //alta impedancia

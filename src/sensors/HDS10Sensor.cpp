@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include "config/pins_config.h"
+#include "AdcUtilities.h"
+#include "ADS124S08.h"
 
 /**
  * @brief Convierte la resistencia del sensor HDS10 a porcentaje de humedad usando interpolación logarítmica
@@ -51,20 +53,20 @@ float HDS10Sensor::convertResistanceToHumidity(float sensorR) {
 }
 
 /**
- * @brief Lee el sensor HDS10 conectado al pin analógico
+ * @brief Lee el sensor HDS10 usando el ADC externo ADS124S08
  * 
  * @return float Porcentaje de humedad (0-100%) según calibración definida
  *               o NAN si ocurre un error o no es posible leer
  */
 float HDS10Sensor::read() {
-    // Leer el valor del pin analógico
-    int adcValue = analogRead(HDS10_SENSOR_PIN);
+    // Configurar para medir diferencial entre AIN6 y AINCOM
+    uint8_t muxConfig = ADS_P_AIN6 | ADS_N_AINCOM;
     
-    // Convertir el valor ADC a voltaje (0-3.3V con resolución de 12 bits)
-    float voltage = adcValue * (3.3f / 4095.0f);
+    // Realizar la medición diferencial utilizando el ADC externo
+    float voltage = AdcUtilities::measureAdcDifferential(muxConfig);
     
-    // Verificar si el voltaje está en rango válido
-    if (voltage <= 0.0f || voltage >= 3.3f) {
+    // Verificar si el voltaje está en rango válido (0-2.5V para el ADS124S08)
+    if (isnan(voltage) || voltage < 0.0f || voltage > 2.5f) {
         return NAN; // Valor fuera de rango
     }
     

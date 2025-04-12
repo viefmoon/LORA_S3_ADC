@@ -12,6 +12,8 @@
 #include "utilities.h"
 #include <map>
 #include <string>
+#include "AdcUtilities.h"
+#include "ADS124S08.h"
 
 // Eliminadas las inclusiones de "ADS124S08.h" y "AdcUtilities.h"
 #include "sensors/NtcManager.h"
@@ -268,20 +270,20 @@ float SensorManager::readSensorValue(const SensorConfig &cfg, SensorReading &rea
         
         case SOILH:
             {
-                // Leer el valor del pin analógico
-                int adcValue = analogRead(SOILH_SENSOR_PIN);
+                // Configurar para medir diferencial entre AIN7 y AINCOM
+                uint8_t muxConfig = ADS_P_AIN7 | ADS_N_AINCOM;
                 
-                // Convertir el valor ADC a voltaje (0-3.3V con resolución de 12 bits)
-                float voltage = adcValue * (3.3f / 4095.0f);
+                // Realizar la medición diferencial utilizando el ADC externo
+                float voltage = AdcUtilities::measureAdcDifferential(muxConfig);
                 
-                // Verificar si el voltaje está en rango válido
-                if (voltage <= 0.0f || voltage >= 3.3f) {
+                // Verificar si el voltaje está en rango válido (0-2.5V para el ADS124S08)
+                if (isnan(voltage) || voltage < 0.0f || voltage > 2.5f) {
                     reading.value = NAN;
                 } else {
-                    // Convertir el voltaje a porcentaje (0V = 0%, 3.3V = 100%)
-                    reading.value = (voltage / 3.3f) * 100.0f;
+                    // Convertir el voltaje a porcentaje (0V = 0%, 2.5V = 100%)
+                    reading.value = (voltage / 2.5f) * 100.0f;
                 }
-                DEBUG_PRINTF("SOILH ADC: %d, voltaje: %.3f, valor: %.3f%%\n", adcValue, voltage, reading.value);
+                DEBUG_PRINTF("SOILH ADC: %.3f V, valor: %.3f%%\n", voltage, reading.value);
             }
             break;
 

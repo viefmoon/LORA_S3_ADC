@@ -4,6 +4,8 @@
 #include "debug.h"
 #include "config/sensor_defaults.h"  // Para NTC_TEMP_MIN y NTC_TEMP_MAX
 #include "config/pins_config.h"      // Para NTC100K_0_PIN, NTC100K_1_PIN y NTC10K_PIN
+#include "AdcUtilities.h"            // Para usar el ADS124S08
+#include "ADS124S08.h"               // Para las definiciones de registros
 
 void NtcManager::calculateSteinhartHartCoeffs(double T1, double R1,
                                           double T2, double R2,
@@ -97,36 +99,29 @@ double NtcManager::readNtc100kTemperature(const char* configKey) {
     double A=0, B=0, C=0;
     calculateSteinhartHartCoeffs(T1K, r1, T2K, r2, T3K, r3, A, B, C);
     
-    // Seleccionar el pin correcto según el configKey
-    int ntcPin = -1;
+    // Configurar el mux según el sensor
+    uint8_t muxConfig = 0;
     if (strcmp(configKey, "0") == 0) {
-        ntcPin = NTC100K_0_PIN;
+        // NTC100K_0: AIN1 (positivo) y AIN0 (negativo)
+        muxConfig = ADS_P_AIN1 | ADS_N_AIN0;
     } else if (strcmp(configKey, "1") == 0) {
-        ntcPin = NTC100K_1_PIN;
+        // NTC100K_1: AIN3 (positivo) y AIN2 (negativo)
+        muxConfig = ADS_P_AIN3 | ADS_N_AIN2;
     } else {
         // Si no coincide con ninguna configuración, retornamos NAN
         return NAN;
     }
 
-    //  
-    int adcValue = analogReadMilliVolts(ntcPin);
+    // Realizar la medición diferencial utilizando el ADC externo
+    float voltage = AdcUtilities::measureAdcDifferential(muxConfig);
     
-    // Usar directamente el valor en milivoltios, convertido a voltios
-    float voltage = adcValue / 1000.0f;
-    
-    if (isnan(voltage) || voltage <= 0.0f || voltage >= 3.0f) {
+    // Verificar si el voltaje es válido (debería estar en rango ±2.5V)
+    if (isnan(voltage) || voltage <= -2.5f || voltage >= 2.5f) {
         return NAN;
     }
 
-    // El NTC100K está conectado como parte de un divisor de voltaje:
-    // 3V --- NTC100K --- [Punto de medición] --- 100K --- GND
-    // A mayor temperatura, menor resistencia del NTC, mayor voltaje en el punto de medición
-    double vRef = 3.0; // Voltaje de referencia (3V)
-    double rFixed = 100000.0; // Resistencia fija (100k)
-    bool ntcTop = true; // NTC está conectado a Vref (arriba)
-    
-    // Calcular la resistencia NTC en ohms
-    double Rntc = computeNtcResistanceFromVoltageDivider(voltage, vRef, rFixed, ntcTop);
+    // Calcular la resistencia del NTC a partir del voltaje diferencial del puente
+    double Rntc = computeNtcResistanceFromBridge(voltage);
     if (Rntc <= 0.0) {
         return NAN;
     }
@@ -157,22 +152,25 @@ double NtcManager::readNtc10kTemperature() {
     double A=0, B=0, C=0;
     calculateSteinhartHartCoeffs(T1K, r1, T2K, r2, T3K, r3, A, B, C);
 
-    // Leer el valor analógico del pin NTC10K usando analogReadMilliVolts
-    int adcValue = analogReadMilliVolts(NTC10K_PIN);
+    // Configurar para medir entre AIN4 (positivo) y AINCOM (negativo)
+    uint8_t muxConfig = ADS_P_AIN4 | ADS_N_AINCOM;
     
-    // Convertir de milivoltios a voltios
-    float voltage = adcValue / 1000.0f;
+    // Realizar la medición diferencial utilizando el ADC externo
+    float voltage = AdcUtilities::measureAdcDifferential(muxConfig);
     
-    if (isnan(voltage) || voltage <= 0.0f || voltage >= 3.0f) {
+    // Verificar si el voltaje es válido (0-2.5V para divisor de tensión)
+    if (isnan(voltage) || voltage < 0.0f || voltage > 2.5f) {
         return NAN;
     }
 
-    // El NTC10K está conectado entre 3V y el punto medio con resistencia de 10k a GND
-    // A mayor temperatura, menor resistencia del NTC, mayor voltaje en el punto de medición
-    double vRef = 3.0; // Voltaje de referencia (3V)
+    // El NTC10K está conectado en un divisor de tensión:
+    // 2.5V --- NTC10K --- [PUNTO DE MEDICIÓN] --- 10K --- GND
+    // Donde el punto de medición es AIN4
+    double vRef = 2.5; // Voltaje de referencia (2.5V)
     double rFixed = 10000.0; // Resistencia fija (10k)
     bool ntcTop = true; // NTC está conectado a Vref (arriba)
     
+    // Calcular la resistencia NTC a partir del voltaje del divisor
     double Rntc = computeNtcResistanceFromVoltageDivider(voltage, vRef, rFixed, ntcTop);
     if (Rntc <= 0.0) {
         return NAN;
@@ -187,4 +185,46 @@ double NtcManager::readNtc10kTemperature() {
     }
     
     return tempC;
+}
+
+/**
+ * @brief Calcula la resistencia del NTC en un puente de Wheatstone a partir del voltaje diferencial
+ * @param diffVoltage Voltaje diferencial medido (V)
+ * @return Resistencia del NTC (ohms) o -1 si hay error
+ * 
+ * El puente Wheatstone se modela como:
+ * 2.5V --- R1 --- [POS] --- NTC --- GND
+ *      |                |
+ *      --- R3 --- [NEG] --- R2 --- GND
+ * 
+ * Donde R1 = R2 = R3 = 100k y NTC es la resistencia a medir
+ */
+double NtcManager::computeNtcResistanceFromBridge(double diffVoltage)
+{
+    // Resistencias fijas del puente
+    const double R1 = 100000.0; // 100k
+    const double R2 = 100000.0; // 100k
+    const double R3 = 100000.0; // 100k
+    const double vRef = 2.5;    // Voltaje de referencia 2.5V
+    
+    // En un puente equilibrado, diffVoltage = 0V cuando NTC = R2
+    // Con temperatura variable, diffVoltage != 0
+    
+    // Si diffVoltage es muy cercano a vRef o -vRef, hay un problema con el circuito
+    if (fabs(diffVoltage) >= vRef * 0.9) {
+        return -1.0;
+    }
+    
+    // Calcular R4 (NTC) a partir de la ecuación del puente:
+    // diffVoltage = vRef * (R2/(R2+NTC) - R3/(R1+R3))
+    // Despejando NTC:
+    double ratio = (diffVoltage / vRef + R3 / (R1 + R3)) / (1 - diffVoltage / vRef);
+    double ntcR = R2 / ratio - R2;
+    
+    // Validar el resultado
+    if (ntcR <= 0.0) {
+        return -1.0;
+    }
+    
+    return ntcR;
 } 

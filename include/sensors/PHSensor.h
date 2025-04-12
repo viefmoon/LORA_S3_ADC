@@ -12,7 +12,10 @@
 class PHSensor {
 public:
     /**
-     * @brief Lee el sensor de pH conectado al canal AIN7 del ADC
+     * @brief Lee el sensor de pH utilizando el ADS124S08
+     * 
+     * Realiza una medición diferencial entre AIN10 y AINCOM utilizando
+     * el ADC externo ADS124S08.
      * 
      * @return float Valor de pH (0-14), o NAN si hay error
      */
