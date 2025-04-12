@@ -26,14 +26,24 @@ public:
     static void power3V3Off();
     
     /**
-     * @brief Activa la línea de alimentación de 12V
+     * @brief Activa la línea de alimentación de 12V1
      */
-    static void power12VOn();
+    static void power12V1On();
     
     /**
      * @brief Desactiva la línea de alimentación de 12V
      */
-    static void power12VOff();
+    static void power12V1Off();
+
+        /**
+     * @brief Activa la línea de alimentación de 12V2
+     */
+    static void power12V2On();
+    
+    /**
+     * @brief Desactiva la línea de alimentación de 12V2
+     */
+    static void power12V2Off(); 
     
     /**
      * @brief Desactiva todas las líneas de alimentación

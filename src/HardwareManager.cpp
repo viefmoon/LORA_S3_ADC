@@ -67,4 +67,8 @@ void HardwareManager::initializeSPISSPins() {
     // Inicializar SS de PT100 como pin nativo
     pinMode(PT100_CS_PIN, OUTPUT);
     digitalWrite(PT100_CS_PIN, HIGH);
+
+    // Inicializar SS de ADS124S08 
+    pinMode(ADS124S08_CS_PIN, OUTPUT);
+    digitalWrite(ADS124S08_CS_PIN, HIGH);
 }

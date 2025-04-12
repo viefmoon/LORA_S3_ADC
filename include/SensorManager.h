@@ -18,7 +18,7 @@
 #include <string>
 #include <Adafruit_BME680.h>
 #include <Adafruit_BME280.h>
-
+#include "ADS124S08.h"
 // Variables y objetos globales declarados en main.cpp
 extern ESP32Time rtc;
 extern SPIClass spiLora;

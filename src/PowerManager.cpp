@@ -9,8 +9,8 @@
 void PowerManager::begin() {
     // Configurar pines como salidas
     pinMode(POWER_3V3_PIN, OUTPUT);
-    pinMode(POWER_12V_PIN, OUTPUT);
-    
+    pinMode(POWER_12V1_PIN, OUTPUT);
+    pinMode(POWER_12V2_PIN, OUTPUT);
     // Asegurar que todas las fuentes están apagadas al inicio
     allPowerOff();
 }
@@ -24,16 +24,26 @@ void PowerManager::power3V3Off() {
     digitalWrite(POWER_3V3_PIN, HIGH);
 }
 
-void PowerManager::power12VOn() {
-    digitalWrite(POWER_12V_PIN, HIGH);
+void PowerManager::power12V1On() {
+    digitalWrite(POWER_12V1_PIN, HIGH);
     delay(POWER_STABILIZE_DELAY);
 }
 
-void PowerManager::power12VOff() {
-    digitalWrite(POWER_12V_PIN, LOW);
+void PowerManager::power12V1Off() {
+    digitalWrite(POWER_12V1_PIN, LOW);
+}
+
+void PowerManager::power12V2On() {
+    digitalWrite(POWER_12V2_PIN, HIGH);
+    delay(POWER_STABILIZE_DELAY);
+}
+
+void PowerManager::power12V2Off() {
+    digitalWrite(POWER_12V2_PIN, LOW);
 }
 
 void PowerManager::allPowerOff() {
     power3V3Off();
-    power12VOff();
+    power12V1Off();
+    power12V2Off();
 }

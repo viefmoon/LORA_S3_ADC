@@ -18,14 +18,6 @@
 // Pines analógicos para sensores
 #define BATTERY_SENSOR_PIN  1  // IO1 
 
-#define NTC100K_0_PIN       3  // IO3
-#define NTC100K_1_PIN       5  // IO5 
-#define NTC10K_PIN          6  // IO6 
-#define PH_SENSOR_PIN       17  // IO17 
-#define COND_SENSOR_PIN     20  // IO20 
-#define HDS10_SENSOR_PIN    7  // IO7 
-#define SOILH_SENSOR_PIN    2  // IO2 // Pin para el sensor de humedad del suelo
-
 // SPI PARA LORA
 #define SPI_LORA_SCK_PIN        9
 #define SPI_LORA_MISO_PIN       11
